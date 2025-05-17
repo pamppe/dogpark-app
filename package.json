@@ -1,0 +1,13 @@
+{
+  "name": "dogpark-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd backend && node server.js",
+    "client": "start cmd /k \"cd frontend && npx expo start\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

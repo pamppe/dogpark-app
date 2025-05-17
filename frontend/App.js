@@ -1,45 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
-import * as Location from 'expo-location';
+import useLocation from './hooks/useLocation';
+import { sendData, fetchStatus } from './api/backend';
+import useCounts from './hooks/useCounts';
+import LocationMap from './components/LocationMap';
 
 export default function App() {
-  const [location, setLocation] = useState(null);
-  const [peopleCount, setPeopleCount] = useState(0);
-  const [dogCount, setDogCount] = useState(0);
+  const location = useLocation();
+  const { peopleCount, dogCount, updatePeopleCount, updateDogCount } = useCounts();
   const [statusData, setStatusData] = useState(null);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.log('Permission to access location was denied');
-        return;
-      }
-
-      let loc = await Location.getCurrentPositionAsync({});
-      setLocation(loc);
-    })();
-  }, []);
-
-  const sendData = async () => {
+  const handleSend = async () => {
     if (!location) return;
-    await fetch('http://192.168.1.110:3000/update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        lat: location.coords.latitude,
-        lon: location.coords.longitude,
-        people: peopleCount,
-        dogs: dogCount
-      })
-    });
+    await sendData(location.coords.latitude, location.coords.longitude, peopleCount, dogCount);
   };
 
-  const fetchStatus = async () => {
+  const handleFetch = async () => {
     try {
-      const res = await fetch('http://192.168.1.110:3000/status');
-      const data = await res.json();
+      const data = await fetchStatus();
       setStatusData(data);
     } catch (err) {
       setError('Yhteys epäonnistui');
@@ -47,13 +26,15 @@ export default function App() {
   };
 
   return (
+    
     <View style={styles.container}>
+        <LocationMap location={location} />
       <Text>People: {peopleCount}</Text>
       <Text>Dogs: {dogCount}</Text>
-      <Button title="+1 Person" onPress={() => setPeopleCount(peopleCount + 1)} />
-      <Button title="+1 Dog" onPress={() => setDogCount(dogCount + 1)} />
-      <Button title="Send Data" onPress={sendData} />
-      <Button title="Check Status" onPress={fetchStatus} />
+      <Button title="+1 Person" onPress={() => updatePeopleCount(peopleCount + 1)} />
+      <Button title="+1 Dog" onPress={() => updateDogCount(dogCount + 1)} />
+      <Button title="Send Data" onPress={handleSend} />
+      <Button title="Check Status" onPress={handleFetch} />
       {error && <Text style={{ color: 'red' }}>{error}</Text>}
       {statusData && statusData.length > 0 && (
         <View style={{ marginTop: 20 }}>
