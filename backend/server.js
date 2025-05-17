@@ -10,14 +10,14 @@ let currentData = [];
 
 app.post('/update', (req, res) => {
   const { lat, lon, people, dogs } = req.body;
-  console.log('📥 Received update:', { lat, lon, people, dogs });
+  console.log('Received update:', { lat, lon, people, dogs });
   currentData = [{ lat, lon, people, dogs, timestamp: Date.now() }];
   res.send({ status: 'ok' });
 });
 
 app.get('/status', (req, res) => {
 
-  console.log('📤 Sending status:', currentData);
+  console.log('Sending status:', currentData);
   res.json(currentData);
 });
 
