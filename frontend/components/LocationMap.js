@@ -1,67 +1,144 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, StyleSheet, Text, Button } from 'react-native';
+import MapView, { Marker, Callout } from 'react-native-maps';
 import { fetchDogParks } from '../api/overpass';
+import { FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import ParkList from './ParkList';
+
 
 export default function LocationMap({ location }) {
     const [dogParks, setDogParks] = useState([]);
+    const [selectedPark, setSelectedPark] = useState(null);
+    const mapRef = useRef(null);
 
     useEffect(() => {
-        fetchDogParks()
+        if (!location?.coords) return;
+
+        fetchDogParks(location.coords.latitude, location.coords.longitude)
             .then(data => {
-                console.log('Fetched parks:', data);
                 setDogParks(data);
             })
             .catch(console.error);
-    }, []);
+    }, [location]);
 
     if (!location || !location.coords) {
-        return <Text>Ladataan sijaintia…</Text>;
+        return <Text>Ladataan Karttaa…</Text>;
     }
+     const renderDetails = (park) => (
+    <View style={styles.details}>
+      <Button title="← Takaisin listaan" onPress={() => setSelectedPark(null)} />
+      <Text style={styles.title}>{park.name}</Text>
+      {park.distance != null && <Text>Etäisyys: {park.distance} m</Text>}
+      {park.access      && <Text>Access: {park.access}</Text>}
+      {park.fenced      && <Text>Aitaus: {park.fenced === 'yes' ? 'Kyllä' : 'Ei'}</Text>}
+      {park.opening_hours && <Text>Auki: {park.opening_hours}</Text>}
+      {park.surface     && <Text>Pinta: {park.surface}</Text>}
+    </View>
+  );
 
     return (
-        <View style={styles.mapContainer}>
-            <MapView
-                style={styles.map}
-                initialRegion={{
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude,
-                    latitudeDelta: 0.1,
-                    longitudeDelta: 0.1
-                }}
-            >
-                <Marker
-                    coordinate={{
-                        latitude: location.coords.latitude,
-                        longitude: location.coords.longitude
-                    }}
-                    title="You are here"
-                />
-                {dogParks.map(park => {
-                    console.log("Drawing marker:", park);
-                    return (
-                        <Marker
-                            key={park.id}
-                            coordinate={{
+    <View style={styles.container}>
+      {/* Kartta omassa kontissaan */}
+      <View style={styles.mapContainer}>
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          initialRegion={{
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+            latitudeDelta: 0.1,
+            longitudeDelta: 0.1,
+          }}
+        >
+             {/* Oma sijainti */}
+          <Marker
+            coordinate={{
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+            }}
+            anchor={{ x: 0.5, y: 0.5 }}
+            onPress={() => setSelectedPark(null)}
+            title="Sinä olet tässä"
+          >
+            <MaterialCommunityIcons name="account" size={30} color="#007AFF" />
+          </Marker>
+
+                {/* Koirapuistot */}
+                {dogParks.map(park => (
+                    <Marker
+                        key={park.id}
+                        coordinate={{ latitude: park.latitude, longitude: park.longitude }}
+                        title={park.name}
+                        description={`Etäisyys: ${park.distance} m`}
+                        anchor={{ x: 0.5, y: 0.5 }}
+                        onPress={() => {
+                            setSelectedPark(park);
+                            mapRef.current?.animateToRegion({
                                 latitude: park.latitude,
-                                longitude: park.longitude
-                            }}
-                            title={park.name}
-                        />
-                    );
-                })}
-            </MapView>
-        </View>
-    );
+                                longitude: park.longitude,
+                                latitudeDelta: 0.01,
+                                longitudeDelta: 0.01
+                            });
+                        }}
+                    >
+                        <FontAwesome5 name="dog" size={30} color="#FF4500" />
+                        <Callout>
+                            <Text>{park.name}</Text>
+                        </Callout>
+                    </Marker>
+                ))}
+                </MapView>
+            </View>
+
+        {/* Alapuolella joko lista tai yksityiskohdat */}
+        <View style={styles.listContainer}>
+      {selectedPark
+        ? renderDetails(selectedPark)
+        : (
+          <ParkList
+            parks={dogParks}
+            onSelect={(park) => {
+              setSelectedPark(park);
+              mapRef.current?.animateToRegion({
+                latitude: park.latitude,
+                longitude: park.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01
+              });
+            }}
+          />
+        )
+      }
+    </View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    mapContainer: {
-        width: '90%',
-        height: 400,
-        marginTop: 1
-    },
-    map: {
-        ...StyleSheet.absoluteFillObject
-    }
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  mapContainer: {
+    /* width: '90%',
+    height: '50%', */
+    flex: 1,
+  },
+  map: {
+    flex: 1,
+  },
+  listContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  details: {
+    padding: 10,
+    borderTopWidth: 1,
+    borderColor: '#ccc',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginVertical: 6,
+  },
 });

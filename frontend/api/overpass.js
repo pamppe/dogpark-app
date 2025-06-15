@@ -1,4 +1,21 @@
-export const fetchDogParks = async () => {
+// Laske etäisyys kahden pisteen välillä metreinä
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3;
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(Δφ / 2) ** 2 +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
+
+export const fetchDogParks = async (userLat, userLon) => {
   const query = `
     [out:json][timeout:10];
     area["name"="Helsinki"]->.searchArea;
@@ -31,7 +48,15 @@ export const fetchDogParks = async () => {
       id: el.id,
       name: el.tags?.name || "Koirapuisto",
       latitude: lat,
-      longitude: lon
+      longitude: lon,
+      distance:
+          userLat != null
+            ? Math.round(getDistance(userLat, userLon, lat, lon))
+            : undefined,
+        access: el.tags?.access,             // "yes"/"no"/"permissive"
+        fenced: el.tags?.fenced,             // "yes"/"no"
+        opening_hours: el.tags?.opening_hours,
+        surface: el.tags?.surface
     };
   })
   .filter(Boolean); // removes nulls
