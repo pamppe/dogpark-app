@@ -34,7 +34,7 @@ export default function ParkList({ parks, onSelect }) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,                 // vie kaiken tilan
+    flex: 1,                 
     backgroundColor: '#fff'
   },
   listContent: {

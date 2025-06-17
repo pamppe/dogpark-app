@@ -14,7 +14,6 @@ function getDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-
 export const fetchDogParks = async (userLat, userLon) => {
   const query = `
     [out:json][timeout:10];
@@ -23,8 +22,10 @@ export const fetchDogParks = async (userLat, userLon) => {
       node["leisure"="dog_park"](area.searchArea);
       way["leisure"="dog_park"](area.searchArea);
       relation["leisure"="dog_park"](area.searchArea);
-    );
-    out center;
+      );
+    out body geom; 
+    >;
+    out skel qt;
   `;
 
   const response = await fetch("https://overpass-api.de/api/interpreter", {
@@ -38,28 +39,28 @@ export const fetchDogParks = async (userLat, userLon) => {
   const data = await response.json();
 
   // array of coordinates
-  const parks = data.elements
-  .map(el => {
-    const lat = el.lat || el.center?.lat;
-    const lon = el.lon || el.center?.lon;
-    if (!lat || !lon) return null;
-
-    return {
-      id: el.id,
-      name: el.tags?.name || "Koirapuisto",
-      latitude: lat,
-      longitude: lon,
-      distance:
-          userLat != null
-            ? Math.round(getDistance(userLat, userLon, lat, lon))
-            : undefined,
-        access: el.tags?.access,             // "yes"/"no"/"permissive"
-        fenced: el.tags?.fenced,             // "yes"/"no"
+    const parks = data.elements
+    // Jätä vain ne elementit, joilla oikeasti on leisure=dog_park
+    .filter(el => el.tags?.leisure === 'dog_park')
+    .map(el => {
+      const lat = el.lat || el.center?.lat;
+      const lon = el.lon || el.center?.lon;
+      if (lat == null || lon == null) return null;
+      return {
+        id: el.id,
+        name: el.tags?.name || "Koirapuisto",
+        latitude: lat,
+        longitude: lon,
+        distance: userLat != null
+          ? Math.round(getDistance(userLat, userLon, lat, lon))
+          : undefined,
+        access: el.tags?.access,
+        fenced: el.tags?.fenced,
         opening_hours: el.tags?.opening_hours,
-        surface: el.tags?.surface
-    };
-  })
-  .filter(Boolean); // removes nulls
-
+        surface: el.tags?.surface,
+        geometry: el.geometry   // polygons only for way/relation
+      };
+    })
+    .filter(Boolean);
   return parks;
 };
