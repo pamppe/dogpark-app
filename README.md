@@ -1,7 +1,7 @@
 # DogPark App
 
 **DogPark** is a mobile application that helps dog owners find and explore dog parks on a map. It shows both the park boundaries and visitor data (people and dogs counts), and lets users send their own counts to a backend.
-
+(WORK IN PROGRESS)
 ---
 
 ## 📦 Technologies
