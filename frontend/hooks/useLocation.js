@@ -5,13 +5,17 @@ export default function useLocation() {
   const [location, setLocation] = useState(null);
 
   useEffect(() => {
+    let subscriber;
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
-        const loc = await Location.getCurrentPositionAsync({});
-        setLocation(loc);
+        subscriber = await Location.watchPositionAsync(
+          { accuracy: Location.Accuracy.High, distanceInterval: 5 },
+          loc => setLocation(loc)
+        );
       }
     })();
+    return () => subscriber && subscriber.remove();
   }, []);
 
   return location;
