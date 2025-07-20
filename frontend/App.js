@@ -1,8 +1,9 @@
+// App.js
 import React, { useState } from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import useLocation from './hooks/useLocation';
-import { sendData, fetchStatus } from './api/backend';
 import useCounts from './hooks/useCounts';
+import { sendData, fetchStatus } from './api/backend';
 import LocationMap from './components/LocationMap';
 
 export default function App() {
@@ -20,24 +21,23 @@ export default function App() {
     try {
       const data = await fetchStatus();
       setStatusData(data);
-    } catch (err) {
+    } catch {
       setError('Yhteys epäonnistui');
     }
   };
 
   return (
-    
     <View style={styles.container}>
-        <LocationMap location={location} />
-      <Text>People: {peopleCount}</Text>
-      <Text>Dogs: {dogCount}</Text>
-      <Button title="+1 Person" onPress={() => updatePeopleCount(peopleCount + 1)} />
-      <Button title="+1 Dog" onPress={() => updateDogCount(dogCount + 1)} />
-      <Button title="Send Data" onPress={handleSend} />
-      <Button title="Check Status" onPress={handleFetch} />
-      {error && <Text style={{ color: 'red' }}>{error}</Text>}
+      {/* Tämä View antaa LocationMapille tilan jakamisen */}
+       <LocationMap
+        location={location}
+        style={{ flex: 1 }}
+      />
+
+      {error && <Text style={styles.error}>{error}</Text>}
+
       {statusData && statusData.length > 0 && (
-        <View style={{ marginTop: 20 }}>
+        <View style={styles.status}>
           <Text>Latest Data:</Text>
           <Text>People: {statusData[0].people}</Text>
           <Text>Dogs: {statusData[0].dogs}</Text>
@@ -49,9 +49,10 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
-  }
+   container: { flex: 1 },
+  error: {
+    color: 'red',
+    textAlign: 'center',
+    marginVertical: 8,
+  },
 });
