@@ -31,21 +31,48 @@ export const fetchParks = async (userLat, userLon) => {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `data=${encodeURIComponent(query)}`
   });
-  const json = await res.json();
-  return json.elements
+   const json = await res.json();
+
+  const parks = json.elements
     .filter(el => el.tags?.leisure === 'dog_park')
     .map(el => {
-      const lat = el.lat ?? el.center?.lat;
-      const lon = el.lon ?? el.center?.lon;
+      // Centroid-laskenta ym. säilyy
+      let lat = el.lat ?? el.center?.lat;
+      let lon = el.lon ?? el.center?.lon;
+      if ((lat == null || lon == null) && Array.isArray(el.geometry)) {
+        const { lat: sumLat, lon: sumLon } = el.geometry
+          .reduce((acc, g) => ({ lat: acc.lat + g.lat, lon: acc.lon + g.lon }), { lat: 0, lon: 0 });
+        lat = sumLat / el.geometry.length;
+        lon = sumLon / el.geometry.length;
+      }
+
+      const distance = (userLat != null && lat != null && lon != null)
+        ? Math.round(getDistance(userLat, userLon, lat, lon))
+        : undefined;
+
+      const originalName = el.tags?.name;
+      const name = originalName ?? 'Koirapuisto';
+
       return {
-        id: el.id,
-        name: el.tags.name ?? 'Koirapuisto',
-        latitude: lat,
-        longitude: lon,
-        distance: (userLat != null && lat && lon)
-          ? Math.round(getDistance(userLat, userLon, lat, lon))
-          : undefined,
-        geometry: el.geometry,        // undefined nodeilla → polygonit vain ways/relations
+        id:            el.id,
+        name,
+        hasName:       Boolean(originalName),  // <— tämä kertoo, onko OSM:ssä ollut oma nimi
+        latitude:      lat,
+        longitude:     lon,
+        distance,
+        geometry:      el.geometry,
+        access:        el.tags?.access,
+        fenced:        el.tags?.fenced,
+        opening_hours: el.tags?.opening_hours,
+        surface:       el.tags?.surface,
       };
+    })
+    // Järjestä etäisyyden mukaan lähimmästä kauimpaan
+    .sort((a, b) => {
+      if (a.distance == null) return 1;
+      if (b.distance == null) return -1;
+      return a.distance - b.distance;
     });
+
+  return parks;
 };
