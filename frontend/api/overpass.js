@@ -1,4 +1,3 @@
-// Laske etäisyys kahden pisteen välillä metreinä
 function getDistance(lat1, lon1, lat2, lon2) {
   const R = 6371e3;
   const φ1 = lat1 * Math.PI / 180;
@@ -14,53 +13,39 @@ function getDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-export const fetchDogParks = async (userLat, userLon) => {
+export const fetchParks = async (userLat, userLon) => {
   const query = `
-    [out:json][timeout:10];
-    area["name"="Helsinki"]->.searchArea;
+    [out:json][timeout:25];
+    area[name="Helsinki"][admin_level=8]->.searchArea;
     (
       node["leisure"="dog_park"](area.searchArea);
       way["leisure"="dog_park"](area.searchArea);
       relation["leisure"="dog_park"](area.searchArea);
-      );
-    out body geom; 
-    >;
+    );
+    out body geom;
+  >;
     out skel qt;
   `;
-
-  const response = await fetch("https://overpass-api.de/api/interpreter", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded"
-    },
+  const res = await fetch('https://overpass-api.de/api/interpreter', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `data=${encodeURIComponent(query)}`
   });
-
-  const data = await response.json();
-
-  // array of coordinates
-    const parks = data.elements
-    // Jätä vain ne elementit, joilla oikeasti on leisure=dog_park
+  const json = await res.json();
+  return json.elements
     .filter(el => el.tags?.leisure === 'dog_park')
     .map(el => {
-      const lat = el.lat || el.center?.lat;
-      const lon = el.lon || el.center?.lon;
-      if (lat == null || lon == null) return null;
+      const lat = el.lat ?? el.center?.lat;
+      const lon = el.lon ?? el.center?.lon;
       return {
         id: el.id,
-        name: el.tags?.name || "Koirapuisto",
+        name: el.tags.name ?? 'Koirapuisto',
         latitude: lat,
         longitude: lon,
-        distance: userLat != null
+        distance: (userLat != null && lat && lon)
           ? Math.round(getDistance(userLat, userLon, lat, lon))
           : undefined,
-        access: el.tags?.access,
-        fenced: el.tags?.fenced,
-        opening_hours: el.tags?.opening_hours,
-        surface: el.tags?.surface,
-        geometry: el.geometry   // polygons only for way/relation
+        geometry: el.geometry,        // undefined nodeilla → polygonit vain ways/relations
       };
-    })
-    .filter(Boolean);
-  return parks;
+    });
 };
