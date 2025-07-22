@@ -1,20 +1,26 @@
 // App.js
-import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import useLocation from './hooks/useLocation';
-import useCounts from './hooks/useCounts';
-import { sendData, fetchStatus } from './api/backend';
-import LocationMap from './components/LocationMap';
+import React, { useState } from "react";
+import { View, Text, StyleSheet } from "react-native";
+import useLocation from "./hooks/useLocation";
+import useCounts from "./hooks/useCounts";
+import { sendData, fetchStatus } from "./api/backend";
+import LocationMap from "./components/LocationMap";
 
 export default function App() {
   const location = useLocation();
-  const { peopleCount, dogCount, updatePeopleCount, updateDogCount } = useCounts();
+  const { peopleCount, dogCount, updatePeopleCount, updateDogCount } =
+    useCounts();
   const [statusData, setStatusData] = useState(null);
   const [error, setError] = useState(null);
 
   const handleSend = async () => {
     if (!location) return;
-    await sendData(location.coords.latitude, location.coords.longitude, peopleCount, dogCount);
+    await sendData(
+      location.coords.latitude,
+      location.coords.longitude,
+      peopleCount,
+      dogCount,
+    );
   };
 
   const handleFetch = async () => {
@@ -22,17 +28,14 @@ export default function App() {
       const data = await fetchStatus();
       setStatusData(data);
     } catch {
-      setError('Yhteys epäonnistui');
+      setError("Yhteys epäonnistui");
     }
   };
 
   return (
     <View style={styles.container}>
       {/* Tämä View antaa LocationMapille tilan jakamisen */}
-       <LocationMap
-        location={location}
-        style={{ flex: 1 }}
-      />
+      <LocationMap location={location} style={{ flex: 1 }} />
 
       {error && <Text style={styles.error}>{error}</Text>}
 
@@ -41,7 +44,9 @@ export default function App() {
           <Text>Latest Data:</Text>
           <Text>People: {statusData[0].people}</Text>
           <Text>Dogs: {statusData[0].dogs}</Text>
-          <Text>Time: {new Date(statusData[0].timestamp).toLocaleTimeString()}</Text>
+          <Text>
+            Time: {new Date(statusData[0].timestamp).toLocaleTimeString()}
+          </Text>
         </View>
       )}
     </View>
@@ -49,10 +54,10 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-   container: { flex: 1 },
+  container: { flex: 1 },
   error: {
-    color: 'red',
-    textAlign: 'center',
+    color: "red",
+    textAlign: "center",
     marginVertical: 8,
   },
 });

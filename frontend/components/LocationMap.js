@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { View, StyleSheet, Text, Button } from 'react-native';
-import { WebView } from 'react-native-webview';
-import { fetchParks } from '../api/overpass';
-import ParkList from './ParkList';
-import useParkPresence from '../hooks/useParkPresence';
-import { fetchStatus } from '../api/backend';
+import React, { useEffect, useState, useRef, useMemo } from "react";
+import { View, StyleSheet, Text, Button } from "react-native";
+import { WebView } from "react-native-webview";
+import { fetchParks } from "../api/overpass";
+import ParkList from "./ParkList";
+import useParkPresence from "../hooks/useParkPresence";
+import { fetchStatus } from "../api/backend";
 
 export default function LocationMap({ location, style }) {
   const [parks, setParks] = useState([]);
@@ -15,40 +15,40 @@ export default function LocationMap({ location, style }) {
   // taustaseuranta (enter/exit)
   useParkPresence(location, parks);
 
-   // hae puistot
+  // hae puistot
   useEffect(() => {
     if (!location?.coords) return;
     fetchParks(location.coords.latitude, location.coords.longitude)
-      .then(data => {
-      console.log('fetchParks palautti:', data.length, 'kohdetta');
-      setParks(data);
-    })
+      .then((data) => {
+        console.log("fetchParks palautti:", data.length, "kohdetta");
+        setParks(data);
+      })
       .catch(console.error);
   }, [location]);
 
   // hae läsnäolot aina kun valittu puisto vaihtuu
   useEffect(() => {
-  if (!selectedPark) {
-    setPresences([]);
-    return;
-  }
-  fetchStatus()
-    .then(data => {
-      const here = data.filter(s => s.parkId === selectedPark.id);
-      setPresences(here);
-    })
-    .catch(console.error);
-}, [selectedPark]);
+    if (!selectedPark) {
+      setPresences([]);
+      return;
+    }
+    fetchStatus()
+      .then((data) => {
+        const here = data.filter((s) => s.parkId === selectedPark.id);
+        setPresences(here);
+      })
+      .catch(console.error);
+  }, [selectedPark]);
 
   const mapHtml = useMemo(() => {
     if (!location?.coords) return `<html><body>Ladataan…</body></html>`;
     const { latitude, longitude } = location.coords;
 
-     // Rakennetaan polygon-layerit ja tallennetaan ne window.parkLayers-hakemistoon
+    // Rakennetaan polygon-layerit ja tallennetaan ne window.parkLayers-hakemistoon
     const polygonScripts = parks
-      .filter(p => p.geometry)
-      .map(p => {
-        const coords = JSON.stringify(p.geometry.map(g => [g.lat, g.lon]));
+      .filter((p) => p.geometry)
+      .map((p) => {
+        const coords = JSON.stringify(p.geometry.map((g) => [g.lat, g.lon]));
         return `
           // Luo karttakerros ja tallenna se id:llä
           var layer${p.id} = L.polygon(${coords}, {
@@ -65,12 +65,14 @@ export default function LocationMap({ location, style }) {
             );
           });
         `;
-      }).join('\n');
+      })
+      .join("\n");
 
-       // 2) Circles for Node-only parks
-  const circleScripts = parks
-    .filter(p => !p.geometry)
-    .map(p => `
+    // 2) Circles for Node-only parks
+    const circleScripts = parks
+      .filter((p) => !p.geometry)
+      .map(
+        (p) => `
       var layer${p.id} = L.circle([${p.latitude}, ${p.longitude}], {
         radius: 30,  // arvo sentteinä, säädä tarpeen mukaan
         color: '#87CEFA',
@@ -83,7 +85,9 @@ export default function LocationMap({ location, style }) {
           JSON.stringify({ type:'select', id:${p.id} })
         );
       });
-    `).join('\n');
+    `,
+      )
+      .join("\n");
 
     return `
       <!DOCTYPE html>
@@ -124,11 +128,15 @@ export default function LocationMap({ location, style }) {
     `;
   }, [location, parks]);
 
-  const onMessage = ev => {
+  const onMessage = (ev) => {
     let msg;
-    try { msg = JSON.parse(ev.nativeEvent.data); } catch { return; }
-    if (msg.type === 'select') {
-      const park = parks.find(p => p.id === msg.id);
+    try {
+      msg = JSON.parse(ev.nativeEvent.data);
+    } catch {
+      return;
+    }
+    if (msg.type === "select") {
+      const park = parks.find((p) => p.id === msg.id);
       if (park) setSelectedPark(park);
     }
   };
@@ -140,7 +148,7 @@ export default function LocationMap({ location, style }) {
       <View style={styles.mapContainer}>
         <WebView
           ref={webviewRef}
-          originWhitelist={['*']}
+          originWhitelist={["*"]}
           source={{ html: mapHtml }}
           style={styles.map}
           onMessage={onMessage}
@@ -148,23 +156,20 @@ export default function LocationMap({ location, style }) {
       </View>
 
       <View style={styles.listContainer}>
-        {selectedPark
-          ? (
-            <View style={styles.details}>
-              <Button title="← Takaisin" onPress={() => setSelectedPark(null)} />
-              <Text style={styles.title}>{selectedPark.name}</Text>
-               {!selectedPark.hasName && (
-                  <Text style={styles.noName}>
-                      Puiston nimeä ei ole tiedossa
-                  </Text>
-              )}
-               {/* Läsnäolotiedot */}
+        {selectedPark ? (
+          <View style={styles.details}>
+            <Button title="← Takaisin" onPress={() => setSelectedPark(null)} />
+            <Text style={styles.title}>{selectedPark.name}</Text>
+            {!selectedPark.hasName && (
+              <Text style={styles.noName}>Puiston nimeä ei ole tiedossa</Text>
+            )}
+            {/* Läsnäolotiedot */}
             <View style={styles.presenceSection}>
               <Text style={styles.sectionTitle}>Käyttäjät puistossa:</Text>
               {presences.length > 0 ? (
-                presences.map(p => (
+                presences.map((p) => (
                   <Text key={p.userId} style={styles.presenceItem}>
-                    {p.userName || `Käyttäjä ${p.userId}`} –{' '}
+                    {p.userName || `Käyttäjä ${p.userId}`} –{" "}
                     {new Date(p.timestamp).toLocaleTimeString()}
                   </Text>
                 ))
@@ -174,13 +179,13 @@ export default function LocationMap({ location, style }) {
             </View>
           </View>
         ) : (
-             <ParkList
-              parks={parks}
-              onSelect={p => {
-                setSelectedPark(p);
-                // kun listalta valitaan, ohjataan karttaa osoitteeseen + zoom
-                if (webviewRef.current) {
-                  const js = `
+          <ParkList
+            parks={parks}
+            onSelect={(p) => {
+              setSelectedPark(p);
+              // kun listalta valitaan, ohjataan karttaa osoitteeseen + zoom
+              if (webviewRef.current) {
+                const js = `
                     window.map.flyTo([${p.latitude}, ${p.longitude}], 18);
                     // jos haluat avata popupin, niin:
                     if (window.parkLayers[${p.id}]) {
@@ -188,51 +193,50 @@ export default function LocationMap({ location, style }) {
                     }
                     true;  // pakollinen palautusarvo WebView:ssä
                   `;
-                  webviewRef.current.injectJavaScript(js);
-                }
-              }}
-            />
-          )
-        }
+                webviewRef.current.injectJavaScript(js);
+              }
+            }}
+          />
+        )}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container:     { flex: 1, backgroundColor: '#fff' },
-  mapContainer:  { flex: 1.5 },
-  map:           { flex: 1 },
+  container: { flex: 1, backgroundColor: "#fff" },
+  mapContainer: { flex: 1.5 },
+  map: { flex: 1 },
   listContainer: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: "#f9f9f9",
     borderTopWidth: 1,
-    borderColor: '#ddd'
+    borderColor: "#ddd",
   },
-  details:       { padding: 10, borderTopWidth: 1, borderColor: '#ccc' },
-  title:         { fontSize: 18, fontWeight: 'bold', marginVertical: 6 },
-  noName:        {
+  details: { padding: 10, borderTopWidth: 1, borderColor: "#ccc" },
+  title: { fontSize: 18, fontWeight: "bold", marginVertical: 6 },
+  noName: {
     fontSize: 12,
-    fontStyle: 'italic',
-    color: 'gray',
+    fontStyle: "italic",
+    color: "gray",
     marginBottom: 6,
   },
   presenceSection: {
     marginTop: 12,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderColor: '#ccc'
+    borderColor: "#ccc",
   },
   sectionTitle: {
-    fontWeight: 'bold',
-    marginBottom: 4
+    fontWeight: "bold",
+    marginBottom: 4,
   },
   presenceItem: {
     fontSize: 14,
-    marginBottom: 2
+    marginBottom: 2,
   },
   presenceEmpty: {
-    fontStyle: 'italic',
-    color: 'gray'
+    fontStyle: "italic",
+    color: "gray",
   },
 });

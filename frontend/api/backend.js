@@ -1,10 +1,10 @@
-const BACKEND_URL = 'http://192.168.1.106:3000';
+const BACKEND_URL = "http://192.168.1.106:3000";
 
 export const sendData = async (lat, lon, people, dogs) => {
   return fetch(`${BACKEND_URL}/update`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lat, lon, people, dogs })
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ lat, lon, people, dogs }),
   });
 };
 

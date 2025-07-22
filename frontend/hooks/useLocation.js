@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import * as Location from 'expo-location';
+import { useEffect, useState } from "react";
+import * as Location from "expo-location";
 
 export default function useLocation() {
   const [location, setLocation] = useState(null);
@@ -8,10 +8,10 @@ export default function useLocation() {
     let subscriber;
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
+      if (status === "granted") {
         subscriber = await Location.watchPositionAsync(
           { accuracy: Location.Accuracy.High, distanceInterval: 5 },
-          loc => setLocation(loc)
+          (loc) => setLocation(loc),
         );
       }
     })();
