@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-     "lint": "expo lint",
+    "lint": "eslint .",
     "test": "echo \"No tests defined yet\" && exit 0"
   },
   "keywords": [],
