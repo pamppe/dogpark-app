@@ -1,63 +1,39 @@
 // App.js
 import React, { useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Button } from "react-native";
 import useLocation from "./hooks/useLocation";
-import useCounts from "./hooks/useCounts";
-import { sendData, fetchStatus } from "./api/backend";
+import useUserId from "./hooks/useUserId";
 import LocationMap from "./components/LocationMap";
+import Constants from "expo-constants";
 
 export default function App() {
   const location = useLocation();
-  const { peopleCount, dogCount, updatePeopleCount, updateDogCount } =
-    useCounts();
-  const [statusData, setStatusData] = useState(null);
-  const [error, setError] = useState(null);
+  const userId = useUserId();
+  const [error, setError] = React.useState(null);
+  const [selectedPark, setSelectedPark] = useState(null);
 
-  const handleSend = async () => {
-    if (!location) return;
-    await sendData(
-      location.coords.latitude,
-      location.coords.longitude,
-      peopleCount,
-      dogCount,
-    );
-  };
-
-  const handleFetch = async () => {
-    try {
-      const data = await fetchStatus();
-      setStatusData(data);
-    } catch {
-      setError("Yhteys epäonnistui");
-    }
-  };
+  if (!userId || !location) {
+    return <Text>Ladataan…</Text>;
+  }
 
   return (
     <View style={styles.container}>
-      {/* Tämä View antaa LocationMapille tilan jakamisen */}
-      <LocationMap location={location} style={{ flex: 1 }} />
-
+      <LocationMap
+        location={location}
+        style={{ flex: 1 }}
+        onSelectPark={(park) => setSelectedPark(park)}
+      />
       {error && <Text style={styles.error}>{error}</Text>}
-
-      {statusData && statusData.length > 0 && (
-        <View style={styles.status}>
-          <Text>Latest Data:</Text>
-          <Text>People: {statusData[0].people}</Text>
-          <Text>Dogs: {statusData[0].dogs}</Text>
-          <Text>
-            Time: {new Date(statusData[0].timestamp).toLocaleTimeString()}
-          </Text>
-        </View>
-      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  error: {
-    color: "red",
-    textAlign: "center",
-    marginVertical: 8,
+  controls: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    padding: 8,
   },
+  error: { color: "red", textAlign: "center", margin: 8 },
 });
