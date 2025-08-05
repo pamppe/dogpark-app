@@ -4,9 +4,9 @@ import { WebView } from "react-native-webview";
 import { fetchParks } from "../api/overpass";
 import ParkList from "./ParkList";
 import useParkPresence from "../hooks/useParkPresence";
-import { fetchStatus } from "../api/backend";
+import { fetchStatus } from "../api/client";
 
-export default function LocationMap({ location, style }) {
+export default function LocationMap({ location, style, onSelectPark }) {
   const [parks, setParks] = useState([]);
   const [selectedPark, setSelectedPark] = useState(null);
   const webviewRef = useRef(null);
@@ -15,16 +15,19 @@ export default function LocationMap({ location, style }) {
   // taustaseuranta (enter/exit)
   useParkPresence(location, parks);
 
-  // hae puistot
+  // hae puistot – ajetaan vain, kun lat tai lon muuttuu
+  const lat = location?.coords?.latitude;
+  const lon = location?.coords?.longitude;
+
   useEffect(() => {
-    if (!location?.coords) return;
-    fetchParks(location.coords.latitude, location.coords.longitude)
+    if (lat == null || lon == null) return;
+    fetchParks(lat, lon)
       .then((data) => {
         console.log("fetchParks palautti:", data.length, "kohdetta");
         setParks(data);
       })
       .catch(console.error);
-  }, [location]);
+  }, [lat, lon]);
 
   // hae läsnäolot aina kun valittu puisto vaihtuu
   useEffect(() => {
@@ -137,7 +140,7 @@ export default function LocationMap({ location, style }) {
     }
     if (msg.type === "select") {
       const park = parks.find((p) => p.id === msg.id);
-      if (park) setSelectedPark(park);
+      if (park) onSelectPark(park);
     }
   };
 
@@ -182,7 +185,7 @@ export default function LocationMap({ location, style }) {
           <ParkList
             parks={parks}
             onSelect={(p) => {
-              setSelectedPark(p);
+              onSelectPark(p);
               // kun listalta valitaan, ohjataan karttaa osoitteeseen + zoom
               if (webviewRef.current) {
                 const js = `
